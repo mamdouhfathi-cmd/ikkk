@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة التداول الذكية | AI Trading Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+    <div class="brand-text">
+      <h1>AI Trader</h1>
+      <span>Institutional Grade</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" id="main-nav" aria-label="القائمة الرئيسية">
+    <button class="nav-item active" data-view="dashboard"><i class="fa-solid fa-gauge-high"></i><span>لوحة التحكم (Dashboard)</span></button>
+    <button class="nav-item" data-view="analysis"><i class="fa-solid fa-brain"></i><span>التحليل الذكي (AI Analysis)</span></button>
+    <button class="nav-item" data-view="tradingview"><i class="fa-solid fa-chart-candlestick"></i><span>الشارت (TradingView)</span></button>
+    <button class="nav-item" data-view="trades"><i class="fa-solid fa-arrow-trend-up"></i><span>إدارة الصفقات (Trades)</span></button>
+    <button class="nav-item" data-view="risk"><i class="fa-solid fa-calculator"></i><span>حاسبة المخاطرة (Risk)</span></button>
+    <button class="nav-item" data-view="journal"><i class="fa-solid fa-book"></i><span>يومية التداول (Journal)</span></button>
+    <button class="nav-item" data-view="watchlist"><i class="fa-solid fa-star"></i><span>قائمة المتابعة (Watchlist)</span></button>
+    <button class="nav-item" data-view="history"><i class="fa-solid fa-clock-rotate-left"></i><span>سجل التحليلات (History)</span></button>
+    <button class="nav-item" data-view="settings"><i class="fa-solid fa-gear"></i><span>الإعدادات (Settings)</span></button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div id="ai-status" class="ai-status disconnected">
+      <span class="status-dot"></span>
+      <span id="ai-status-text">غير متصل (Disconnected)</span>
+    </div>
+    <div id="model-badge" class="model-badge">gemini-2.5-flash</div>
+  </div>
+</aside>
+
+<!-- Mobile top bar -->
+<header id="mobile-topbar">
+  <button id="menu-toggle" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
+  <span class="brand-text-mobile">AI Trader</span>
+</header>
+<div id="sidebar-overlay"></div>
+
+<!-- ===================== MAIN ===================== -->
+<main id="main-content">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="view-dashboard" class="view active">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم (Dashboard)</h2>
+      <p>نظرة شاملة على حسابك وأداءك — حماية رأس المال أولاً</p>
+    </header>
+
+    <div class="stats-grid" id="dashboard-stats">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-wallet"></i></div>
+        <div class="stat-body"><span class="stat-label">رصيد الحساب (Balance)</span><strong id="stat-balance">—</strong></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-percent"></i></div>
+        <div class="stat-body"><span class="stat-label">نسبة الفوز (Win Rate)</span><strong id="stat-winrate">—</strong></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="fa-solid fa-scale-balanced"></i></div>
+        <div class="stat-body"><span class="stat-label">متوسط العائد للمخاطرة (Avg RR)</span><strong id="stat-avg-rr">—</strong></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-body"><span class="stat-label">المخاطرة المفتوحة (Open Risk)</span><strong id="stat-open-risk">—</strong></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <h3><i class="fa-solid fa-arrow-trend-up"></i> الصفقات المفتوحة (Open Trades)</h3>
+        <div id="dash-open-trades" class="mini-list"><p class="empty-msg">لا توجد صفقات مفتوحة</p></div>
+      </div>
+      <div class="card">
+        <h3><i class="fa-solid fa-brain"></i> آخر التحليلات (Latest Analyses)</h3>
+        <div id="dash-latest-analyses" class="mini-list"><p class="empty-msg">لا توجد تحليلات بعد</p></div>
+      </div>
+      <div class="card">
+        <h3><i class="fa-solid fa-star"></i> قائمة المتابعة (Watchlist)</h3>
+        <div id="dash-watchlist" class="mini-list"><p class="empty-msg">أضف رموز للمتابعة</p></div>
+      </div>
+      <div class="card">
+        <h3><i class="fa-solid fa-chart-pie"></i> الأداء (Performance)</h3>
+        <div style="height:260px;position:relative;"><canvas id="performance-chart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card risk-dashboard-card">
+      <h3><i class="fa-solid fa-shield-halved"></i> لوحة المخاطر (Risk Dashboard)</h3>
+      <div id="risk-dashboard-body" class="risk-dash-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ AI ANALYSIS ============ -->
+  <section id="view-analysis" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-brain"></i> التحليل الذكي (AI Analysis)</h2>
+      <p>ارفع صور الشارت (TradingView / Bookmap) واحصل على تحليل مؤسسي كامل</p>
+    </header>
+
+    <div class="analysis-layout">
+      <!-- Input panel -->
+      <div class="card analysis-input-panel">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="an-market">السوق (Market)</label>
+            <input type="text" id="an-market" list="markets-list" placeholder="XAUUSD, EURUSD, BTCUSD...">
+            <datalist id="markets-list">
+              <option value="XAUUSD"></option><option value="EURUSD"></option><option value="GBPUSD"></option>
+              <option value="USDJPY"></option><option value="BTCUSD"></option><option value="ETHUSD"></option>
+              <option value="US30"></option><option value="NAS100"></option><option value="SPX500"></option>
+              <option value="XAGUSD"></option><option value="USOIL"></option><option value="NATGAS"></option>
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label for="an-timeframe">الفريم (Timeframe)</label>
+            <select id="an-timeframe">
+              <option value="">تلقائي (Auto Detect)</option>
+              <option>Weekly</option><option>Daily</option><option>4H</option><option>1H</option>
+              <option>15M</option><option>5M</option><option>1M</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="an-image-type">نوع الصور (Image Type)</label>
+            <select id="an-image-type">
+              <option value="chart">شارت (TradingView / Chart)</option>
+              <option value="bookmap">بوك ماب (Bookmap)</option>
+              <option value="mixed">مختلط (Mixed)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>اسحب الصور هنا، أو الصق (Ctrl+V)، أو <label for="file-input" class="link">اختر ملفات</label></p>
+          <span class="hint">PNG / JPG / WEBP / BMP — صور متعددة مدعومة، الفريم الأعلى أولاً</span>
+          <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/bmp" multiple hidden>
+        </div>
+        <div id="image-previews" class="image-previews"></div>
+
+        <div class="form-group">
+          <label for="an-notes">ملاحظات إضافية (Notes) — السعر الحالي، أخبار، صفقة مفتوحة، رابط TradingView...</label>
+          <textarea id="an-notes" rows="3" placeholder="مثال: السعر الحالي 3350، عندي صفقة شراء مفتوحة من 3340، خبر NFP بعد ساعتين..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="an-intent">نوع الطلب (Intent)</label>
+            <select id="an-intent">
+              <option value="new_trade">صفقة جديدة (New Trade)</option>
+              <option value="update">تحديث تحليل سابق (Update)</option>
+              <option value="manage">إدارة صفقة مفتوحة (Manage Position)</option>
+              <option value="bias">اتجاه السوق فقط (Market Bias)</option>
+              <option value="education">تعليم (Education)</option>
+              <option value="news">تحليل أخبار (News)</option>
+            </select>
+          </div>
+          <div class="form-group" id="an-parent-group" style="display:none;">
+            <label for="an-parent">التحليل السابق (Previous Analysis)</label>
+            <select id="an-parent"></select>
+          </div>
+        </div>
+
+        <button id="analyze-btn" class="btn-primary btn-lg">
+          <i class="fa-solid fa-bolt"></i> حلّل الآن (Analyze)
+        </button>
+        <p id="analysis-warning" class="inline-warning" style="display:none;"></p>
+      </div>
+
+      <!-- Chat / results panel -->
+      <div class="card chat-panel">
+        <div class="chat-panel-header">
+          <h3><i class="fa-solid fa-comments"></i> المحادثة (Live Chat)</h3>
+          <button id="clear-chat-btn" class="btn-ghost btn-sm" title="محادثة جديدة"><i class="fa-solid fa-plus"></i> جلسة جديدة</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+          <div class="chat-welcome">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h4>حماية رأس المال أولاً (Capital Protection First)</h4>
+            <p>ارفع الشارت واكتب ملاحظاتك. مفيش صفقة إلا لو الإعداد (A+ Setup) بنسبة ثقة (Confidence) فوق 80.</p>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <textarea id="chat-input" rows="1" placeholder="اسأل عن التحليل، اطلب تحديث، أو أضف معلومة جديدة..."></textarea>
+          <button id="chat-send-btn" class="btn-primary" aria-label="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRADINGVIEW ============ -->
+  <section id="view-tradingview" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-chart-candlestick"></i> الشارت المباشر (TradingView)</h2>
+      <p>شارت مباشر — غيّر الرمز والفريم ثم خد سكرين شوت وحمّله في صفحة التحليل</p>
+    </header>
+    <div class="card tv-controls">
+      <input type="text" id="tv-symbol" placeholder="OANDA:XAUUSD" value="OANDA:XAUUSD">
+      <select id="tv-interval">
+        <option value="W">Weekly</option><option value="D" selected>Daily</option>
+        <option value="240">4H</option><option value="60">1H</option>
+        <option value="15">15M</option><option value="5">5M</option><option value="1">1M</option>
+      </select>
+      <button id="tv-load-btn" class="btn-primary"><i class="fa-solid fa-rotate"></i> تحميل</button>
+    </div>
+    <div class="card tv-container-card">
+      <div id="tv-container" style="height:600px;"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRADES ============ -->
+  <section id="view-trades" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-arrow-trend-up"></i> إدارة الصفقات (Trade Manager)</h2>
+      <p>سجّل وتابع كل صفقاتك — مفتوحة، معلقة، ومغلقة</p>
+      <button id="new-trade-btn" class="btn-primary header-action"><i class="fa-solid fa-plus"></i> صفقة جديدة</button>
+    </header>
+    <div class="card">
+      <div class="table-toolbar">
+        <input type="search" id="trades-search" placeholder="بحث بالرمز...">
+        <select id="trades-filter">
+          <option value="">كل الحالات</option>
+          <option value="OPEN">مفتوحة (Open)</option>
+          <option value="PENDING">معلقة (Pending)</option>
+          <option value="CLOSED">مغلقة (Closed)</option>
+          <option value="CANCELLED">ملغاة (Cancelled)</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="trades-table">
+          <thead><tr>
+            <th>السوق</th><th>الاتجاه</th><th>الدخول</th><th>وقف الخسارة (SL)</th>
+            <th>الأهداف (TP)</th><th>اللوت</th><th>RR</th><th>الحالة</th><th>النتيجة</th><th>P/L</th><th></th>
+          </tr></thead>
+          <tbody id="trades-tbody"></tbody>
+        </table>
+      </div>
+      <p id="trades-empty" class="empty-msg">لا توجد صفقات — اضغط "صفقة جديدة"</p>
+    </div>
+  </section>
+
+  <!-- ============ RISK CALCULATOR ============ -->
+  <section id="view-risk" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-calculator"></i> حاسبة المخاطرة (Risk Calculator)</h2>
+      <p>احسب حجم العقد (Lot Size) بدقة قبل أي دخول</p>
+    </header>
+    <div class="risk-layout">
+      <div class="card">
+        <h3>المدخلات (Inputs)</h3>
+        <div class="form-group"><label for="rc-market">السوق (Market)</label>
+          <select id="rc-market">
+            <option value="XAUUSD">XAUUSD — الذهب</option>
+            <option value="XAGUSD">XAGUSD — الفضة</option>
+            <option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option>
+            <option value="USDJPY">USDJPY</option><option value="AUDUSD">AUDUSD</option>
+            <option value="USDCAD">USDCAD</option><option value="NZDUSD">NZDUSD</option>
+            <option value="BTCUSD">BTCUSD</option><option value="ETHUSD">ETHUSD</option>
+            <option value="US30">US30</option><option value="NAS100">NAS100</option>
+            <option value="SPX500">SPX500</option><option value="USOIL">USOIL — النفط</option>
+            <option value="CUSTOM">مخصص (Custom)</option>
+          </select>
+        </div>
+        <div id="rc-custom-fields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group"><label for="rc-pip-size">حجم النقطة (Pip Size)</label><input type="number" id="rc-pip-size" step="any" value="0.0001"></div>
+            <div class="form-group"><label for="rc-pip-value">قيمة النقطة لكل لوت (Pip Value / Lot $)</label><input type="number" id="rc-pip-value" step="any" value="10"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="rc-balance">الرصيد (Balance $)</label><input type="number" id="rc-balance" step="any" placeholder="10000"></div>
+          <div class="form-group"><label for="rc-risk">المخاطرة % (Risk)</label><input type="number" id="rc-risk" step="0.05" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="rc-entry">سعر الدخول (Entry)</label><input type="number" id="rc-entry" step="any"></div>
+          <div class="form-group"><label for="rc-sl">وقف الخسارة (Stop Loss)</label><input type="number" id="rc-sl" step="any"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="rc-tp1">TP1</label><input type="number" id="rc-tp1" step="any"></div>
+          <div class="form-group"><label for="rc-tp2">TP2</label><input type="number" id="rc-tp2" step="any"></div>
+          <div class="form-group"><label for="rc-tp3">TP3</label><input type="number" id="rc-tp3" step="any"></div>
+        </div>
+        <button id="rc-calc-btn" class="btn-primary btn-lg"><i class="fa-solid fa-equals"></i> احسب (Calculate)</button>
+      </div>
+      <div class="card" id="rc-results-card">
+        <h3>النتائج (Results)</h3>
+        <div id="rc-results" class="rc-results">
+          <p class="empty-msg">أدخل البيانات واضغط احسب</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ JOURNAL ============ -->
+  <section id="view-journal" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-book"></i> يومية التداول (Trading Journal)</h2>
+      <p>سجّل أسباب الدخول والخروج، الأخطاء، الدروس، والمشاعر</p>
+      <button id="new-journal-btn" class="btn-primary header-action"><i class="fa-solid fa-plus"></i> إدخال جديد</button>
+    </header>
+    <div class="card">
+      <div class="table-toolbar">
+        <input type="search" id="journal-search" placeholder="بحث...">
+      </div>
+      <div id="journal-list" class="journal-list"></div>
+      <p id="journal-empty" class="empty-msg">لا توجد إدخالات بعد</p>
+    </div>
+  </section>
+
+  <!-- ============ WATCHLIST ============ -->
+  <section id="view-watchlist" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-star"></i> قائمة المتابعة (Watchlist)</h2>
+      <p>تابع أسواقك المفضلة مع آخر انحياز (Bias) وثقة (Confidence)</p>
+    </header>
+    <div class="card">
+      <div class="watchlist-add">
+        <input type="text" id="wl-symbol" placeholder="أضف رمز... XAUUSD">
+        <button id="wl-add-btn" class="btn-primary"><i class="fa-solid fa-plus"></i> إضافة</button>
+      </div>
+      <div id="watchlist-grid" class="watchlist-grid"></div>
+      <p id="watchlist-empty" class="empty-msg">قائمتك فارغة</p>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="view-history" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-clock-rotate-left"></i> سجل التحليلات (Analysis History)</h2>
+      <p>كل تحليل بنسخه (Versions) — ارجع وقارن في أي وقت</p>
+    </header>
+    <div class="card">
+      <div class="table-toolbar">
+        <input type="search" id="history-search" placeholder="بحث بالسوق أو القرار...">
+        <select id="history-filter">
+          <option value="">كل القرارات</option>
+          <option>BUY NOW</option><option>SELL NOW</option><option>BUY LIMIT</option><option>SELL LIMIT</option>
+          <option>BUY STOP</option><option>SELL STOP</option><option>WAIT</option><option>NO TRADE</option>
+        </select>
+      </div>
+      <div id="history-list" class="history-list"></div>
+      <p id="history-empty" class="empty-msg">لا توجد تحليلات محفوظة</p>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="view-settings" class="view">
+    <header class="view-header">
+      <h2><i class="fa-solid fa-gear"></i> الإعدادات (Settings)</h2>
+      <p>مفتاح Gemini API يُحفظ محلياً على جهازك فقط ولا يُرسل لأي خادم خارجي غير Google</p>
+    </header>
+    <div class="settings-layout">
+      <div class="card">
+        <h3><i class="fa-solid fa-key"></i> إعدادات API (Gemini)</h3>
+        <div class="form-group">
+          <label for="set-api-key">مفتاح API (API Key)</label>
+          <div class="input-with-btn">
+            <input type="password" id="set-api-key" placeholder="AIza..." autocomplete="off">
+            <button id="toggle-key-btn" class="btn-ghost" aria-label="إظهار/إخفاء"><i class="fa-solid fa-eye"></i></button>
+          </div>
+          <span class="hint">احصل على مفتاح مجاني من <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a></span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="set-model">الموديل الافتراضي (Default Model)</label>
+            <select id="set-model">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+              <option value="custom">مخصص (Custom)...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="set-fallback">الموديل الاحتياطي (Fallback Model)</label>
+            <select id="set-fallback">
+              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+              <option value="">بدون (None)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="custom-model-group" style="display:none;">
+          <label for="set-custom-model">اسم الموديل المخصص</label>
+          <input type="text" id="set-custom-model" placeholder="gemini-3.5-flash">
+        </div>
+        <div class="btn-row">
+          <button id="test-api-btn" class="btn-secondary"><i class="fa-solid fa-plug"></i> اختبار الاتصال (Test)</button>
+          <button id="delete-key-btn" class="btn-danger-ghost"><i class="fa-solid fa-trash"></i> حذف المفتاح</button>
+        </div>
+        <p id="api-test-result" class="inline-msg"></p>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-shield-halved"></i> إعدادات المخاطرة (Risk Profile)</h3>
+        <div class="form-row">
+          <div class="form-group"><label for="set-balance">رصيد الحساب ($)</label><input type="number" id="set-balance" step="any" placeholder="10000"></div>
+          <div class="form-group">
+            <label for="set-risk">المخاطرة الافتراضية %</label>
+            <select id="set-risk">
+              <option value="0.25">0.25% — متحفظ جداً</option>
+              <option value="0.5">0.5% — متحفظ</option>
+              <option value="1" selected>1% — قياسي (Standard)</option>
+              <option value="2">2% — هجومي</option>
+              <option value="3">3% — مخاطرة عالية ⚠️</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label for="set-max-daily">أقصى خسارة يومية %</label><input type="number" id="set-max-daily" step="0.5" value="3"></div>
+          <div class="form-group"><label for="set-min-rr">أدنى عائد/مخاطرة (Min RR)</label><input type="number" id="set-min-rr" step="0.5" value="2"></div>
+        </div>
+        <div class="form-group">
+          <label for="set-name">اسمك (اختياري)</label>
+          <input type="text" id="set-name" placeholder="اسمك">
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="set-strict" checked> الوضع الصارم (Strict Mode) — رفض أي إعداد ضعيف</label>
+        <label class="checkbox-row"><input type="checkbox" id="set-coach" checked> وضع المدرب (Coach Mode) — شرح تعليمي بعد كل تحليل</label>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-file-export"></i> تصدير / استيراد (Export / Import)</h3>
+        <div class="btn-row">
+          <button id="export-json-btn" class="btn-secondary"><i class="fa-solid fa-download"></i> تصدير JSON</button>
+          <button id="export-csv-btn" class="btn-secondary"><i class="fa-solid fa-file-csv"></i> تصدير الصفقات CSV</button>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button id="save-settings-btn" class="btn-primary btn-lg"><i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات</button>
+        <span id="settings-saved-msg" class="inline-msg"></span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== TRADE MODAL ===================== -->
+<div id="trade-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-labelledby="trade-modal-title">
+    <div class="modal-header">
+      <h3 id="trade-modal-title">صفقة جديدة</h3>
+      <button class="modal-close" data-close="trade-modal" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tm-id">
+      <div class="form-row">
+        <div class="form-group"><label for="tm-market">السوق</label><input type="text" id="tm-market" list="markets-list" placeholder="XAUUSD"></div>
+        <div class="form-group"><label for="tm-direction">الاتجاه</label>
+          <select id="tm-direction"><option value="BUY">شراء (BUY)</option><option value="SELL">بيع (SELL)</option></select>
+        </div>
+        <div class="form-group"><label for="tm-order-type">نوع الأمر</label>
+          <select id="tm-order-type"><option value="MARKET">Market</option><option value="LIMIT">Limit</option><option value="STOP">Stop</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="tm-entry">الدخول (Entry)</label><input type="number" id="tm-entry" step="any"></div>
+        <div class="form-group"><label for="tm-sl">وقف الخسارة (SL)</label><input type="number" id="tm-sl" step="any"></div>
+        <div class="form-group"><label for="tm-lot">اللوت (Lot)</label><input type="number" id="tm-lot" step="any"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="tm-tp1">TP1</label><input type="number" id="tm-tp1" step="any"></div>
+        <div class="form-group"><label for="tm-tp2">TP2</label><input type="number" id="tm-tp2" step="any"></div>
+        <div class="form-group"><label for="tm-tp3">TP3</label><input type="number" id="tm-tp3" step="any"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="tm-status">الحالة</label>
+          <select id="tm-status">
+            <option value="OPEN">مفتوحة</option><option value="PENDING">معلقة</option>
+            <option value="CLOSED">مغلقة</option><option value="CANCELLED">ملغاة</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="tm-result">النتيجة</label>
+          <select id="tm-result">
+            <option value="NONE">—</option><option value="WIN">ربح (Win)</option>
+            <option value="LOSS">خسارة (Loss)</option><option value="BREAKEVEN">تعادل (BE)</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="tm-pnl">الربح/الخسارة ($)</label><input type="number" id="tm-pnl" step="any"></div>
+      </div>
+      <div class="form-group"><label for="tm-notes">ملاحظات</label><textarea id="tm-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="trade-modal">إلغاء</button>
+      <button id="tm-save-btn" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== JOURNAL MODAL ===================== -->
+<div id="journal-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-labelledby="journal-modal-title">
+    <div class="modal-header">
+      <h3 id="journal-modal-title">إدخال جديد في اليومية</h3>
+      <button class="modal-close" data-close="journal-modal" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="jm-id">
+      <div class="form-row">
+        <div class="form-group"><label for="jm-market">السوق</label><input type="text" id="jm-market" list="markets-list"></div>
+        <div class="form-group"><label for="jm-emotion">الحالة النفسية (Emotion)</label>
+          <select id="jm-emotion">
+            <option>منضبط</option><option>خوف</option><option>طمع</option><option>انتقام</option>
+            <option>ثقة زائدة</option><option>توتر</option><option>صبر</option><option>تردد</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="jm-result">النتيجة</label>
+          <select id="jm-result"><option>WIN</option><option>LOSS</option><option>BREAKEVEN</option><option>NO TRADE</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label for="jm-entry-reason">سبب الدخول (Entry Reason)</label><textarea id="jm-entry-reason" rows="2"></textarea></div>
+      <div class="form-group"><label for="jm-exit-reason">سبب الخروج (Exit Reason)</label><textarea id="jm-exit-reason" rows="2"></textarea></div>
+      <div class="form-group"><label for="jm-mistakes">الأخطاء (Mistakes)</label><textarea id="jm-mistakes" rows="2"></textarea></div>
+      <div class="form-group"><label for="jm-lessons">الدروس المستفادة (Lessons)</label><textarea id="jm-lessons" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="journal-modal">إلغاء</button>
+      <button id="jm-save-btn" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ANALYSIS DETAIL MODAL ===================== -->
+<div id="analysis-modal" class="modal-backdrop" hidden>
+  <div class="modal modal-lg" role="dialog" aria-labelledby="analysis-modal-title">
+    <div class="modal-header">
+      <h3 id="analysis-modal-title">تفاصيل التحليل</h3>
+      <button class="modal-close" data-close="analysis-modal" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="analysis-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="analysis-modal">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/prompt.js"></script>
+<script src="js/gemini.js"></script>
+<script src="js/risk.js"></script>
+<script src="js/trades.js"></script>
+<script src="js/journal.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
